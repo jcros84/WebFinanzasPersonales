@@ -17,51 +17,51 @@ const DividendModal = ({ isOpen, onClose, onSubmit }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center p-6 bg-slate-900/50 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
-        <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-orange-50/50">
-          <h3 className="text-xl font-bold text-slate-900">Registrar Dividendo</h3>
-          <button onClick={onClose} className="p-2 hover:bg-slate-200 rounded-full transition-colors">
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-6 bg-background/80 backdrop-blur-md animate-in fade-in duration-200">
+      <div className="bg-surface w-full max-w-md rounded-3xl shadow-2xl border border-slate-800 overflow-hidden animate-in zoom-in-95 duration-200">
+        <div className="p-6 border-b border-slate-800 flex justify-between items-center bg-slate-900/50">
+          <h3 className="text-xl font-bold text-text-main">Registrar Dividendo</h3>
+          <button onClick={onClose} className="p-2 hover:bg-slate-800 rounded-full transition-colors text-text-muted hover:text-text-main">
             <X size={20} />
           </button>
         </div>
 
         <form onSubmit={handleSubmit} className="p-8 space-y-5">
-          <div className="flex items-center justify-center w-16 h-16 bg-orange-100 text-orange-600 rounded-2xl mx-auto mb-4">
+          <div className="flex items-center justify-center w-16 h-16 bg-orange-500/10 text-orange-400 border border-orange-500/20 rounded-2xl mx-auto mb-4">
             <DollarSign size={32} />
           </div>
 
           <div>
-            <label className="block text-sm font-bold text-slate-700 mb-2">Ticker / Símbolo</label>
+            <label className="block text-sm font-bold text-text-muted mb-2">Ticker / Símbolo</label>
             <input
               type="text"
               required
               placeholder="Ej: JNJ, PG, O..."
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:outline-none focus:border-orange-500 transition-all uppercase"
+              className="input-field uppercase"
               value={formData.ticker}
               onChange={(e) => setFormData({ ...formData, ticker: e.target.value })}
             />
           </div>
 
           <div>
-            <label className="block text-sm font-bold text-slate-700 mb-2">Importe Neto (Cobrado)</label>
+            <label className="block text-sm font-bold text-text-muted mb-2">Importe Neto (Cobrado)</label>
             <input
               type="number"
               step="any"
               required
               placeholder="€ 0.00"
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:outline-none focus:border-orange-500 transition-all"
+              className="input-field"
               value={formData.amount}
               onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
             />
           </div>
 
           <div>
-            <label className="block text-sm font-bold text-slate-700 mb-2">Fecha de Cobro</label>
+            <label className="block text-sm font-bold text-text-muted mb-2">Fecha de Cobro</label>
             <input
               type="date"
               required
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:outline-none focus:border-orange-500 transition-all"
+              className="input-field"
               value={formData.date}
               onChange={(e) => setFormData({ ...formData, date: e.target.value })}
             />

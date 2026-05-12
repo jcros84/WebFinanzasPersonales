@@ -147,18 +147,18 @@ const PortfolioDashboard = () => {
   };
 
   return (
-    <main className="pt-32 pb-20 bg-slate-50 min-h-screen">
+    <main className="pt-32 pb-20 bg-background min-h-screen">
       <div className="max-w-7xl mx-auto px-6">
         {/* Header */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-4">
           <div>
-            <h1 className="text-4xl font-bold text-slate-900 mb-2">Mi Cartera de Dividendos</h1>
-            <p className="text-slate-600">Gestión y seguimiento de tus activos generadores de rentas.</p>
+            <h1 className="text-4xl font-bold text-text-main mb-2">Mi Cartera de Dividendos</h1>
+            <p className="text-text-muted">Gestión y seguimiento de tus activos generadores de rentas.</p>
           </div>
           <div className="flex flex-wrap gap-3">
             <button 
               onClick={() => setIsDividendOpen(true)}
-              className="flex items-center gap-2 bg-orange-100 hover:bg-orange-200 text-orange-700 px-6 py-3 rounded-xl font-bold transition-all"
+              className="flex items-center gap-2 bg-orange-500/10 hover:bg-orange-500/20 text-orange-400 px-6 py-3 rounded-xl font-bold transition-all border border-orange-500/20"
             >
               <DollarSign size={20} /> Registrar Dividendo
             </button>
@@ -174,17 +174,17 @@ const PortfolioDashboard = () => {
         {/* Stat Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
           {stats.map((stat, i) => (
-            <div key={i} className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow">
-              <p className="text-sm font-medium text-slate-500 mb-2">{stat.label}</p>
-              <h3 className="text-2xl font-bold text-slate-900 mb-2">{stat.value}</h3>
+            <div key={i} className="bg-surface p-6 rounded-2xl border border-slate-800 shadow-sm hover:shadow-xl hover:bg-surface-hover transition-all duration-300">
+              <p className="text-sm font-medium text-text-muted mb-2">{stat.label}</p>
+              <h3 className="text-2xl font-bold text-text-main mb-2">{stat.value}</h3>
               <div className={`flex items-center gap-1 text-sm font-bold ${
-                stat.isPositive === true ? 'text-green-600' : 
-                stat.isPositive === false ? 'text-red-600' : 'text-slate-400'
+                stat.isPositive === true ? 'text-emerald-400' : 
+                stat.isPositive === false ? 'text-rose-400' : 'text-text-muted'
               }`}>
                 {stat.isPositive === true ? <TrendingUp size={14} /> : 
                  stat.isPositive === false ? <TrendingDown size={14} /> : null}
                 {stat.change}
-                <span className="font-medium text-slate-400 ml-1">vs mes pasado</span>
+                <span className="font-medium text-slate-500 ml-1">vs mes pasado</span>
               </div>
             </div>
           ))}
@@ -193,8 +193,8 @@ const PortfolioDashboard = () => {
         {/* Charts Section */}
         <div className="grid lg:grid-cols-3 gap-8 mb-10">
           {/* Summary by Type */}
-          <div className="lg:col-span-1 bg-white p-8 rounded-3xl border border-slate-100 shadow-sm">
-            <h4 className="text-xl font-bold mb-6 flex items-center gap-2">
+          <div className="lg:col-span-1 bg-surface p-8 rounded-3xl border border-slate-800 shadow-sm">
+            <h4 className="text-xl font-bold mb-6 flex items-center gap-2 text-text-main">
               <PieChartIcon className="text-orange-500" /> Resumen por Tipo
             </h4>
             <div className="h-[250px]">
@@ -208,12 +208,16 @@ const PortfolioDashboard = () => {
                     outerRadius={80}
                     paddingAngle={8}
                     dataKey="value"
+                    stroke="none"
                   >
                     {typeData.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={entry.color} />
                     ))}
                   </Pie>
-                  <Tooltip />
+                  <Tooltip 
+                    contentStyle={{ backgroundColor: '#0f172a', border: '1px solid #1e293b', borderRadius: '12px' }}
+                    itemStyle={{ color: '#f8fafc' }}
+                  />
                 </PieChart>
               </ResponsiveContainer>
             </div>
@@ -222,30 +226,31 @@ const PortfolioDashboard = () => {
                 <div key={i} className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <div className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }}></div>
-                    <span className="text-slate-600 font-medium">{item.name}</span>
+                    <span className="text-text-muted font-medium">{item.name}</span>
                   </div>
-                  <span className="font-bold text-slate-900">{item.value}%</span>
+                  <span className="font-bold text-text-main">{item.value}%</span>
                 </div>
               ))}
             </div>
           </div>
 
           {/* Monthly Dividends */}
-          <div className="lg:col-span-2 bg-white p-8 rounded-3xl border border-slate-100 shadow-sm">
-            <h4 className="text-xl font-bold mb-6 flex items-center gap-2">
-              <DollarSign className="text-green-600" /> Dividendos Mensuales
+          <div className="lg:col-span-2 bg-surface p-8 rounded-3xl border border-slate-800 shadow-sm">
+            <h4 className="text-xl font-bold mb-6 flex items-center gap-2 text-text-main">
+              <DollarSign className="text-emerald-500" /> Dividendos Mensuales
             </h4>
             <div className="h-[300px]">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={monthlyDividends}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#1e293b" />
                   <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fill: '#64748b' }} dy={10} />
                   <YAxis axisLine={false} tickLine={false} tick={{ fill: '#64748b' }} />
                   <Tooltip 
-                    cursor={{ fill: '#f8fafc' }}
-                    contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
+                    cursor={{ fill: '#1e293b' }}
+                    contentStyle={{ backgroundColor: '#0f172a', border: '1px solid #1e293b', borderRadius: '12px' }}
+                    itemStyle={{ color: '#f8fafc' }}
                   />
-                  <Bar dataKey="amount" fill="#10b981" radius={[6, 6, 0, 0]} barSize={40} />
+                  <Bar dataKey="amount" fill="#6366f1" radius={[6, 6, 0, 0]} barSize={40} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -253,17 +258,17 @@ const PortfolioDashboard = () => {
         </div>
 
         {/* Recent Operations Table */}
-        <div className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden">
-          <div className="p-8 border-b border-slate-50 flex justify-between items-center">
-            <h4 className="text-xl font-bold">Últimas Operaciones</h4>
-            <button className="text-green-600 font-bold hover:text-green-700 transition-colors flex items-center gap-1">
+        <div className="bg-surface rounded-3xl border border-slate-800 shadow-sm overflow-hidden">
+          <div className="p-8 border-b border-slate-800 flex justify-between items-center">
+            <h4 className="text-xl font-bold text-text-main">Últimas Operaciones</h4>
+            <button className="text-primary font-bold hover:text-primary/80 transition-colors flex items-center gap-1">
               Ver todas <ArrowUpRight size={18} />
             </button>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-left">
               <thead>
-                <tr className="bg-slate-50 text-slate-500 text-sm uppercase tracking-wider">
+                <tr className="bg-slate-900/50 text-text-muted text-sm uppercase tracking-wider">
                   <th className="px-8 py-4 font-bold">Fecha</th>
                   <th className="px-8 py-4 font-bold">Activo</th>
                   <th className="px-8 py-4 font-bold">Tipo</th>
@@ -272,26 +277,26 @@ const PortfolioDashboard = () => {
                   <th className="px-8 py-4 font-bold">Total</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-50">
+              <tbody className="divide-y divide-slate-800">
                 {transactions.map((tx, i) => (
-                  <tr key={i} className="hover:bg-slate-50/50 transition-colors">
-                    <td className="px-8 py-4 text-slate-600">{tx.date}</td>
-                    <td className="px-8 py-4 font-bold text-slate-900">{tx.ticker}</td>
+                  <tr key={i} className="hover:bg-slate-800/30 transition-colors">
+                    <td className="px-8 py-4 text-text-muted">{tx.date}</td>
+                    <td className="px-8 py-4 font-bold text-text-main">{tx.ticker}</td>
                     <td className="px-8 py-4">
                       <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${
-                        tx.type === 'BUY' ? 'bg-green-50 text-green-600' :
-                        tx.type === 'SELL' ? 'bg-red-50 text-red-600' :
-                        tx.type === 'DRIP' ? 'bg-blue-50 text-blue-600' :
-                        'bg-orange-50 text-orange-600'
+                        tx.type === 'BUY' ? 'bg-emerald-500/10 text-emerald-400' :
+                        tx.type === 'SELL' ? 'bg-rose-500/10 text-rose-400' :
+                        tx.type === 'DRIP' ? 'bg-indigo-500/10 text-indigo-400' :
+                        'bg-orange-500/10 text-orange-400'
                       }`}>
                         {tx.type === 'BUY' ? 'Compra' : 
                          tx.type === 'SELL' ? 'Venta' : 
                          tx.type === 'DRIP' ? 'DRIP' : 'Dividendo'}
                       </span>
                     </td>
-                    <td className="px-8 py-4 text-slate-600">{tx.shares}</td>
-                    <td className="px-8 py-4 text-slate-600">{tx.price !== '-' ? `€${tx.price}` : '-'}</td>
-                    <td className={`px-8 py-4 font-bold ${tx.type === 'DIVIDEND' ? 'text-green-600' : 'text-slate-900'}`}>
+                    <td className="px-8 py-4 text-text-muted">{tx.shares}</td>
+                    <td className="px-8 py-4 text-text-muted">{tx.price !== '-' ? `€${tx.price}` : '-'}</td>
+                    <td className={`px-8 py-4 font-bold ${tx.type === 'DIVIDEND' ? 'text-emerald-400' : 'text-text-main'}`}>
                       {tx.type === 'DIVIDEND' ? '+' : ''}€{tx.total.toLocaleString()}
                     </td>
                   </tr>

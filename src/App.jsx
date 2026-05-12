@@ -23,7 +23,7 @@ const App = () => {
   return (
     <Router>
       <ScrollToTop />
-      <div className="min-h-screen flex flex-col bg-white text-primary">
+      <div className="min-h-screen flex flex-col bg-background text-text-main">
         <Navbar />
         <main className="flex-grow">
           <Routes>

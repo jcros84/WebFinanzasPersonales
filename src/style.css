@@ -1,16 +1,21 @@
 @import "tailwindcss";
 
 @theme {
-  --color-primary: #001b3d;
-  --color-secondary: #2D9BEB;
-  --color-accent: #5AB3F0;
-  --color-surface: #ffffff;
-  --color-muted: #f8fafc;
+  --color-primary: #6366f1;
+  --color-secondary: #06b6d4;
+  --color-accent: #10b981;
+  --color-background: #020617;
+  --color-surface: #0f172a;
+  --color-surface-hover: #1e293b;
+  --color-muted: #64748b;
+  --color-text-main: #f8fafc;
+  --color-text-muted: #94a3b8;
   
-  --font-sans: "Inter", system-ui, -apple-system, sans-serif;
+  --font-sans: "Outfit", "Inter", system-ui, -apple-system, sans-serif;
   
   --radius-xl: 1rem;
   --radius-2xl: 1.5rem;
+  --radius-3xl: 2rem;
 }
 
 @layer base {
@@ -18,20 +23,32 @@
     scroll-behavior: smooth;
   }
   body {
-    @apply font-sans bg-white text-slate-900 antialiased;
+    @apply font-sans bg-background text-text-main antialiased selection:bg-primary/30;
   }
 }
 
 @layer components {
   .btn-primary {
-    @apply px-6 py-3 bg-secondary hover:bg-accent text-white font-semibold rounded-xl transition-all duration-300 shadow-lg shadow-blue-500/20 active:scale-95;
+    @apply px-6 py-3 bg-primary hover:bg-primary/90 text-white font-semibold rounded-xl transition-all duration-300 shadow-lg shadow-primary/20 active:scale-95;
+  }
+  
+  .btn-secondary {
+    @apply px-6 py-3 bg-secondary hover:bg-secondary/90 text-white font-semibold rounded-xl transition-all duration-300 shadow-lg shadow-secondary/20 active:scale-95;
   }
   
   .btn-outline {
-    @apply px-6 py-3 border-2 border-primary/10 text-primary font-semibold rounded-xl hover:bg-primary/5 transition-all duration-300;
+    @apply px-6 py-3 border-2 border-slate-700 text-text-main font-semibold rounded-xl hover:bg-slate-800 transition-all duration-300;
   }
 
   .glass-card {
-    @apply bg-white/80 backdrop-blur-md border border-white/20 rounded-2xl shadow-xl shadow-slate-200/50;
+    @apply bg-surface/50 backdrop-blur-xl border border-slate-800/50 rounded-2xl shadow-2xl;
+  }
+
+  .glass-nav {
+    @apply bg-background/70 backdrop-blur-md border-b border-slate-800/50;
+  }
+
+  .input-field {
+    @apply w-full px-4 py-3 bg-slate-900/50 border border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all text-text-main placeholder:text-muted;
   }
 }

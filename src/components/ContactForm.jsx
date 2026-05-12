@@ -35,20 +35,20 @@ const ContactForm = () => {
     <div className="glass-card p-8 lg:p-12">
       {status === 'success' ? (
         <div className="text-center py-12 animate-in fade-in zoom-in duration-300">
-          <div className="w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-6">
+          <div className="w-20 h-20 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
             </svg>
           </div>
-          <h3 className="text-2xl font-bold mb-2">¡Mensaje enviado!</h3>
-          <p className="text-slate-600">Gracias por contactarnos. Te responderemos pronto.</p>
+          <h3 className="text-2xl font-bold mb-2 text-text-main">¡Mensaje enviado!</h3>
+          <p className="text-text-muted">Gracias por contactarnos. Te responderemos pronto.</p>
         </div>
       ) : (
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="p-1 space-y-6">
           <div>
-            <label htmlFor="name" className="block text-sm font-bold mb-2 text-slate-700">Nombre completo</label>
+            <label htmlFor="name" className="block text-sm font-bold mb-2 text-text-muted">Nombre completo</label>
             <div className="relative">
-              <span className="absolute left-4 top-3.5 text-slate-400">
+              <span className="absolute left-4 top-3.5 text-slate-500">
                 <User size={20} />
               </span>
               <input 
@@ -59,15 +59,15 @@ const ContactForm = () => {
                 placeholder="Tu nombre" 
                 value={formData.name}
                 onChange={handleChange}
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-12 py-3 focus:outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-500/5 transition-all"
+                className="input-field !pl-12"
               />
             </div>
           </div>
           
           <div>
-            <label htmlFor="email" className="block text-sm font-bold mb-2 text-slate-700">Correo electrónico</label>
+            <label htmlFor="email" className="block text-sm font-bold mb-2 text-text-muted">Correo electrónico</label>
             <div className="relative">
-              <span className="absolute left-4 top-3.5 text-slate-400">
+              <span className="absolute left-4 top-3.5 text-slate-500">
                 <Mail size={20} />
               </span>
               <input 
@@ -78,13 +78,13 @@ const ContactForm = () => {
                 placeholder="tu@email.com" 
                 value={formData.email}
                 onChange={handleChange}
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-12 py-3 focus:outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-500/5 transition-all"
+                className="input-field !pl-12"
               />
             </div>
           </div>
 
           <div>
-            <label htmlFor="message" className="block text-sm font-bold mb-2 text-slate-700">Mensaje</label>
+            <label htmlFor="message" className="block text-sm font-bold mb-2 text-text-muted">Mensaje</label>
             <textarea 
               id="message" 
               name="message" 
@@ -93,7 +93,7 @@ const ContactForm = () => {
               placeholder="¿En qué podemos ayudarte?" 
               value={formData.message}
               onChange={handleChange}
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-500/5 transition-all"
+              className="input-field"
             ></textarea>
           </div>
 
