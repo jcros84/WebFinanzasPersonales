@@ -1,40 +1,84 @@
 -- SQL Schema for Supabase
 
 -- 1. Portfolios Table
-CREATE TABLE portfolios (
+CREATE TABLE IF NOT EXISTS portfolios (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   name TEXT NOT NULL,
   description TEXT,
   created_at TIMESTAMPTZ DEFAULT now(),
-  user_id UUID REFERENCES auth.users(id) -- Optional: for authentication
+  user_id UUID REFERENCES auth.users(id)
 );
 
--- 2. Transactions Table
-CREATE TABLE transactions (
+-- 2. Assets Table
+CREATE TABLE IF NOT EXISTS assets (
+  ticker TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  country TEXT,
+  exchange TEXT,
+  currency TEXT DEFAULT 'EUR',
+  sector TEXT,
+  subsector TEXT,
+  asset_type TEXT DEFAULT 'Acción',
+  estimated_annual_dividend NUMERIC DEFAULT 0,
+  dividend_schedule JSONB DEFAULT '{}',
+  created_at TIMESTAMPTZ DEFAULT now(),
+  user_id UUID REFERENCES auth.users(id) DEFAULT auth.uid()
+);
+
+-- 3. Transactions Table
+CREATE TABLE IF NOT EXISTS transactions (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   portfolio_id UUID REFERENCES portfolios(id) ON DELETE CASCADE,
-  ticker TEXT NOT NULL,
-  type TEXT NOT NULL, -- BUY, SELL, DRIP
-  shares DECIMAL NOT NULL,
-  price DECIMAL NOT NULL,
-  total DECIMAL NOT NULL,
-  asset_type TEXT NOT NULL, -- STOCK, ETF, OPTION
+  ticker TEXT REFERENCES assets(ticker),
+  portfolio TEXT DEFAULT 'DGI',
+  broker TEXT DEFAULT 'ING',
   date DATE NOT NULL,
-  created_at TIMESTAMPTZ DEFAULT now()
+  type TEXT CHECK (type IN ('BUY', 'SELL', 'SCRIP', 'DRIP')),
+  shares NUMERIC NOT NULL,
+  price_local NUMERIC NOT NULL,
+  commission_eur NUMERIC DEFAULT 0,
+  exchange_rate NUMERIC DEFAULT 1.0,
+  total_local NUMERIC NOT NULL,
+  total_eur NUMERIC NOT NULL,
+  remaining_shares NUMERIC DEFAULT 0,
+  created_at TIMESTAMPTZ DEFAULT now(),
+  user_id UUID REFERENCES auth.users(id) DEFAULT auth.uid()
 );
 
--- 3. Dividends Table
-CREATE TABLE dividends (
+-- 4. Dividends Table
+CREATE TABLE IF NOT EXISTS dividends (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   portfolio_id UUID REFERENCES portfolios(id) ON DELETE CASCADE,
-  ticker TEXT NOT NULL,
-  amount DECIMAL NOT NULL,
+  ticker TEXT REFERENCES assets(ticker),
+  portfolio TEXT DEFAULT 'DGI',
+  broker TEXT DEFAULT 'ING',
   date DATE NOT NULL,
-  created_at TIMESTAMPTZ DEFAULT now()
+  dividend_type TEXT DEFAULT 'Dividendo',
+  gross_amount_eur NUMERIC NOT NULL,
+  withholding_origin_eur NUMERIC DEFAULT 0,
+  withholding_dest_eur NUMERIC DEFAULT 0,
+  commission_eur NUMERIC DEFAULT 0,
+  net_amount_eur NUMERIC NOT NULL,
+  comments TEXT,
+  created_at TIMESTAMPTZ DEFAULT now(),
+  user_id UUID REFERENCES auth.users(id) DEFAULT auth.uid()
 );
 
--- 4. Messages (Contact Form)
-CREATE TABLE messages (
+-- 5. Realized Gains Table
+CREATE TABLE IF NOT EXISTS realized_gains (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  sale_transaction_id UUID REFERENCES transactions(id),
+  buy_transaction_id UUID REFERENCES transactions(id),
+  shares_sold NUMERIC NOT NULL,
+  buy_price_eur NUMERIC NOT NULL,
+  sell_price_eur NUMERIC NOT NULL,
+  profit_eur NUMERIC NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT now(),
+  user_id UUID REFERENCES auth.users(id) DEFAULT auth.uid()
+);
+
+-- 6. Messages (Contact Form)
+CREATE TABLE IF NOT EXISTS messages (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   name TEXT NOT NULL,
   email TEXT NOT NULL,
@@ -42,14 +86,46 @@ CREATE TABLE messages (
   created_at TIMESTAMPTZ DEFAULT now()
 );
 
--- Enable RLS (Optional but recommended)
+-- Enable RLS
 ALTER TABLE portfolios ENABLE ROW LEVEL SECURITY;
+ALTER TABLE assets ENABLE ROW LEVEL SECURITY;
 ALTER TABLE transactions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE dividends ENABLE ROW LEVEL SECURITY;
+ALTER TABLE realized_gains ENABLE ROW LEVEL SECURITY;
 ALTER TABLE messages ENABLE ROW LEVEL SECURITY;
 
--- Create policies (Example: Allow all for now, or restrict by user_id)
-CREATE POLICY "Allow all for now" ON portfolios FOR ALL USING (true);
-CREATE POLICY "Allow all for now" ON transactions FOR ALL USING (true);
-CREATE POLICY "Allow all for now" ON dividends FOR ALL USING (true);
-CREATE POLICY "Allow all for now" ON messages FOR INSERT WITH CHECK (true);
+-- Explicit GRANTS for Data API (Supabase 2026 Security Update)
+GRANT ALL ON TABLE portfolios TO authenticated, service_role;
+GRANT ALL ON TABLE assets TO authenticated, service_role;
+GRANT ALL ON TABLE transactions TO authenticated, service_role;
+GRANT ALL ON TABLE dividends TO authenticated, service_role;
+GRANT ALL ON TABLE realized_gains TO authenticated, service_role;
+GRANT ALL ON TABLE messages TO authenticated, service_role;
+GRANT INSERT ON TABLE messages TO anon; -- Allow contact form submissions
+
+-- Example RLS Policies
+-- Portfolios
+CREATE POLICY "Users can manage their own portfolios" ON portfolios
+  FOR ALL TO authenticated USING (auth.uid() = user_id);
+
+-- Assets
+CREATE POLICY "Users can manage their own assets" ON assets
+  FOR ALL TO authenticated USING (auth.uid() = user_id);
+
+-- Transactions
+CREATE POLICY "Users can manage their own transactions" ON transactions
+  FOR ALL TO authenticated USING (auth.uid() = user_id);
+
+-- Dividends
+CREATE POLICY "Users can manage their own dividends" ON dividends
+  FOR ALL TO authenticated USING (auth.uid() = user_id);
+
+-- Realized Gains
+CREATE POLICY "Users can manage their own realized gains" ON realized_gains
+  FOR ALL TO authenticated USING (auth.uid() = user_id);
+
+-- Messages
+CREATE POLICY "Anyone can insert messages" ON messages
+  FOR INSERT TO anon WITH CHECK (true);
+CREATE POLICY "Authenticated users can see messages" ON messages
+  FOR SELECT TO authenticated USING (true);
