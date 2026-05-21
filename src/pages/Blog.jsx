@@ -34,7 +34,7 @@ const Blog = () => {
       <div className="max-w-7xl mx-auto px-6">
         <div className="text-center mb-16">
           <h1 className="text-4xl font-bold mb-4">Recursos y Aprendizaje</h1>
-          <p className="text-slate-600">Mejora tu cultura financiera con nuestros artículos semanales.</p>
+          <p className="text-text-muted">Mejora tu cultura financiera con nuestros artículos semanales.</p>
         </div>
 
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -54,7 +54,7 @@ const Blog = () => {
                 <span className="text-slate-500 font-medium italic">{post.time}</span>
               </div>
               <h2 className="text-2xl font-bold mb-4 group-hover:text-secondary transition-colors">{post.title}</h2>
-              <p className="text-slate-600 mb-6 flex-grow">{post.excerpt}</p>
+              <p className="text-text-muted mb-6 flex-grow">{post.excerpt}</p>
               <div className="flex items-center gap-2 font-bold group-hover:gap-3 transition-all">
                 Leer artículo <ArrowRight className="w-4 h-4 text-secondary" />
               </div>

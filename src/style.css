@@ -1,15 +1,24 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
-  --color-primary: #6366f1;
-  --color-secondary: #06b6d4;
-  --color-accent: #10b981;
-  --color-background: #020617;
-  --color-surface: #0f172a;
-  --color-surface-hover: #1e293b;
-  --color-muted: #64748b;
-  --color-text-main: #f8fafc;
-  --color-text-muted: #94a3b8;
+  --color-primary: var(--primary);
+  --color-secondary: var(--secondary);
+  --color-accent: var(--accent);
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-surface-hover: var(--surface-hover);
+  --color-muted: var(--muted);
+  --color-text-main: var(--text-main);
+  --color-text-muted: var(--text-muted);
+  
+  --color-slate-400: var(--slate-400);
+  --color-slate-500: var(--slate-500);
+  --color-slate-600: var(--slate-600);
+  --color-slate-700: var(--slate-700);
+  --color-slate-800: var(--slate-800);
+  --color-slate-900: var(--slate-900);
   
   --font-sans: "Outfit", "Inter", system-ui, -apple-system, sans-serif;
   
@@ -19,11 +28,51 @@
 }
 
 @layer base {
+  :root {
+    /* Default (Light Mode) Variables */
+    --primary: #4f46e5;
+    --secondary: #0891b2;
+    --accent: #059669;
+    --background: #f8fafc;
+    --surface: #ffffff;
+    --surface-hover: #f1f5f9;
+    --muted: #94a3b8;
+    --text-main: #0f172a;
+    --text-muted: #475569;
+    
+    --slate-400: #64748b;
+    --slate-500: #475569;
+    --slate-600: #334155;
+    --slate-700: #cbd5e1;
+    --slate-800: #e2e8f0;
+    --slate-900: #f1f5f9;
+  }
+
+  .dark {
+    /* Dark Mode Variables */
+    --primary: #6366f1;
+    --secondary: #06b6d4;
+    --accent: #10b981;
+    --background: #020617;
+    --surface: #0f172a;
+    --surface-hover: #1e293b;
+    --muted: #64748b;
+    --text-main: #f8fafc;
+    --text-muted: #94a3b8;
+    
+    --slate-400: #94a3b8;
+    --slate-500: #64748b;
+    --slate-600: #475569;
+    --slate-700: #334155;
+    --slate-800: #1e293b;
+    --slate-900: #0f172a;
+  }
+
   html {
     scroll-behavior: smooth;
   }
   body {
-    @apply font-sans bg-background text-text-main antialiased selection:bg-primary/30;
+    @apply font-sans bg-background text-text-main antialiased selection:bg-primary/30 transition-colors duration-300;
   }
 }
 

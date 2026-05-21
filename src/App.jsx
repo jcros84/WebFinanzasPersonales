@@ -10,6 +10,7 @@ import PortfolioDashboard from './pages/portfolio/PortfolioDashboard';
 import Maestros from './pages/maestros/Maestros';
 import Login from './pages/Login';
 import { AuthProvider } from './context/AuthContext';
+import { ThemeProvider } from './context/ThemeContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import { useEffect } from 'react';
 
@@ -25,9 +26,10 @@ const ScrollToTop = () => {
 const App = () => {
   return (
     <AuthProvider>
-      <Router>
-        <ScrollToTop />
-        <div className="min-h-screen flex flex-col bg-background text-text-main">
+      <ThemeProvider>
+        <Router>
+          <ScrollToTop />
+          <div className="min-h-screen flex flex-col bg-background text-text-main transition-colors duration-300">
           <Navbar />
           <main className="flex-grow">
             <Routes>
@@ -59,6 +61,7 @@ const App = () => {
           <Footer />
         </div>
       </Router>
+      </ThemeProvider>
     </AuthProvider>
   );
 };
