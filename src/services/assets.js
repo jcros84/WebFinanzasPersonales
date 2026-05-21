@@ -27,11 +27,11 @@ export const createAsset = async (asset) => {
  * @param {string} id - UUID of the asset
  * @param {Object} updates - fields to update
  */
-export const updateAsset = async (id, updates) => {
+export const updateAsset = async (ticker, updates) => {
   const { data, error } = await supabase
     .from("assets")
     .update(updates)
-    .eq("id", id)
+    .eq("ticker", ticker)
     .select();
   if (error) throw error;
   return data[0];
@@ -41,8 +41,8 @@ export const updateAsset = async (id, updates) => {
  * Delete an asset
  * @param {string} id - UUID of the asset
  */
-export const deleteAsset = async (id) => {
-  const { error } = await supabase.from("assets").delete().eq("id", id);
+export const deleteAsset = async (ticker) => {
+  const { error } = await supabase.from("assets").delete().eq("ticker", ticker);
   if (error) throw error;
   return true;
 };

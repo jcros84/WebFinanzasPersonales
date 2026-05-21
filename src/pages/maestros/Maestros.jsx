@@ -7,6 +7,7 @@ const Maestros = () => {
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
   const [editAsset, setEditAsset] = useState(null);
+  const [error, setError] = useState(null);
 
   const fetchAssets = async () => {
     setLoading(true);
@@ -25,32 +26,38 @@ const Maestros = () => {
   }, []);
 
   const handleCreate = async (asset) => {
+    setError(null);
     try {
       await createAsset(asset);
+      setShowCreate(false);
       fetchAssets();
     } catch (e) {
       console.error(e);
+      setError(e.message || "Error al crear el activo. Revisa los datos.");
     }
-    setShowCreate(false);
   };
 
-  const handleUpdate = async (id, updates) => {
+  const handleUpdate = async (ticker, updates) => {
+    setError(null);
     try {
-      await updateAsset(id, updates);
+      await updateAsset(ticker, updates);
+      setEditAsset(null);
       fetchAssets();
     } catch (e) {
       console.error(e);
+      setError(e.message || "Error al actualizar el activo.");
     }
-    setEditAsset(null);
   };
 
-  const handleDelete = async (id) => {
+  const handleDelete = async (ticker) => {
     if (!window.confirm("¿Eliminar este activo?")) return;
+    setError(null);
     try {
-      await deleteAsset(id);
+      await deleteAsset(ticker);
       fetchAssets();
     } catch (e) {
       console.error(e);
+      setError(e.message || "Error al eliminar el activo.");
     }
   };
 
@@ -63,7 +70,7 @@ const Maestros = () => {
       exchange: initial.exchange || "",
       currency: initial.currency || "",
       sector: initial.sector || "",
-      estimate_annual_dividend: initial.estimate_annual_dividend || "",
+      estimated_annual_dividend: initial.estimated_annual_dividend || "",
     });
 
     const handleChange = (e) => {
@@ -73,7 +80,14 @@ const Maestros = () => {
 
     const submit = (e) => {
       e.preventDefault();
-      onSubmit(form);
+      
+      // Sanitización de datos
+      const sanitizedForm = {
+        ...form,
+        estimated_annual_dividend: form.estimated_annual_dividend === "" ? 0 : parseFloat(form.estimated_annual_dividend)
+      };
+      
+      onSubmit(sanitizedForm);
     };
 
     return (
@@ -135,9 +149,9 @@ const Maestros = () => {
           />
         </div>
         <input
-          name="estimate_annual_dividend"
+          name="estimated_annual_dividend"
           placeholder="Div. Anual Estimada"
-          value={form.estimate_annual_dividend}
+          value={form.estimated_annual_dividend}
           onChange={handleChange}
           className="input-field"
         />
@@ -168,6 +182,13 @@ const Maestros = () => {
           </button>
         </div>
 
+        {error && (
+          <div className="mb-6 p-4 bg-rose-500/20 border border-rose-500/50 text-rose-400 rounded-xl flex items-center justify-between">
+            <span>{error}</span>
+            <button onClick={() => setError(null)}><X size={16} /></button>
+          </div>
+        )}
+
         {/* Tabla */}
         <div className="overflow-x-auto bg-surface rounded-2xl border border-slate-800 shadow-2xl">
           <table className="w-full text-left">
@@ -193,7 +214,7 @@ const Maestros = () => {
                 </tr>
               ) : (
                  assets.map((a) => (
-                  <tr key={a.id} className="hover:bg-slate-800/30 transition-colors">
+                  <tr key={a.ticker} className="hover:bg-slate-800/30 transition-colors">
                     <td className="px-6 py-4 font-bold text-text-main">{a.ticker}</td>
                     <td className="px-6 py-4 text-text-muted">{a.name}</td>
                     <td className="px-6 py-4">
@@ -205,7 +226,7 @@ const Maestros = () => {
                     <td className="px-6 py-4 text-text-muted">{a.exchange}</td>
                     <td className="px-6 py-4 text-text-muted">{a.currency}</td>
                     <td className="px-6 py-4 text-text-muted">{a.sector}</td>
-                    <td className="px-6 py-4 text-emerald-400 font-bold">{a.estimate_annual_dividend}</td>
+                    <td className="px-6 py-4 text-emerald-400 font-bold">{a.estimated_annual_dividend}</td>
                     <td className="px-6 py-4 flex justify-center gap-3">
                       <button
                         onClick={() => setEditAsset(a)}
@@ -215,7 +236,7 @@ const Maestros = () => {
                         Editar
                       </button>
                       <button
-                        onClick={() => handleDelete(a.id)}
+                        onClick={() => handleDelete(a.ticker)}
                         className="p-2 hover:bg-rose-500/20 text-rose-400 rounded-lg transition-colors"
                         title="Eliminar"
                       >
@@ -239,7 +260,12 @@ const Maestros = () => {
                   <X size={20} />
                 </button>
               </div>
-              <AssetForm onSubmit={handleCreate} onCancel={() => setShowCreate(false)} />
+              {error && (
+                <div className="mb-4 p-3 bg-rose-500/20 border border-rose-500/50 text-rose-400 rounded-lg text-sm">
+                  {error}
+                </div>
+              )}
+              <AssetForm onSubmit={handleCreate} onCancel={() => { setShowCreate(false); setError(null); }} />
             </div>
           </div>
         )}
@@ -254,10 +280,15 @@ const Maestros = () => {
                   <X size={20} />
                 </button>
               </div>
+              {error && (
+                <div className="mb-4 p-3 bg-rose-500/20 border border-rose-500/50 text-rose-400 rounded-lg text-sm">
+                  {error}
+                </div>
+              )}
               <AssetForm
                 initial={editAsset}
-                onSubmit={(data) => handleUpdate(editAsset.id, data)}
-                onCancel={() => setEditAsset(null)}
+                onSubmit={(data) => handleUpdate(editAsset.ticker, data)}
+                onCancel={() => { setEditAsset(null); setError(null); }}
               />
             </div>
           </div>

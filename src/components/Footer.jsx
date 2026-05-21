@@ -4,11 +4,11 @@ import { TrendingUp, Send } from 'lucide-react';
 
 const Footer = () => {
   return (
-    <footer className="bg-primary text-white pt-20 pb-10">
+    <footer className="bg-slate-950 text-white pt-20 pb-10 border-t border-slate-900">
       <div className="max-w-7xl mx-auto px-6 grid md:grid-cols-4 gap-12 mb-20">
         <div className="col-span-1 md:col-span-1">
           <Link to="/" className="flex items-center gap-2 mb-6">
-            <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center">
+            <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center border border-primary/20">
               <TrendingUp className="text-primary w-6 h-6" />
             </div>
             <span className="text-xl font-bold">FinanzaPro</span>
