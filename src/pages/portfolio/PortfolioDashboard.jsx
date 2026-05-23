@@ -16,15 +16,16 @@ import {
   Cell, 
   ResponsiveContainer, 
   Tooltip, 
-  BarChart, 
-  Bar, 
+  AreaChart, 
+  Area, 
   XAxis, 
   YAxis, 
-  CartesianGrid 
+  CartesianGrid,
+  Legend
 } from 'recharts';
 import TransactionModal from '../../components/portfolio/TransactionModal';
 import DividendModal from '../../components/portfolio/DividendModal';
-import { getTransactions, createTransaction, createDividend, getPortfolios, createPortfolio } from '../../services/portfolio';
+import { getTransactions, createTransaction, getDividends, createDividend, getPortfolios, createPortfolio } from '../../services/portfolio';
 import { useAuth } from '../../context/AuthContext';
 
 const PortfolioDashboard = () => {
@@ -37,6 +38,7 @@ const PortfolioDashboard = () => {
   const [newPortfolioName, setNewPortfolioName] = useState('');
   
   const [transactions, setTransactions] = useState([]);
+  const [dividends, setDividends] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -67,14 +69,27 @@ const PortfolioDashboard = () => {
   const fetchData = async (portfolioId) => {
     try {
       setLoading(true);
-      const { data: txs } = await getTransactions(portfolioId); 
+      const [{ data: txs }, { data: divs }] = await Promise.all([
+        getTransactions(portfolioId),
+        getDividends(portfolioId)
+      ]);
       
       const formattedTxs = txs.map(tx => ({
         ...tx,
+        _source: 'transaction',
+        _sortDate: tx.date,
         date: new Date(tx.date).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' })
+      }));
+
+      const formattedDivs = divs.map(d => ({
+        ...d,
+        _source: 'dividend',
+        _sortDate: d.date,
+        date: new Date(d.date).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' })
       }));
       
       setTransactions(formattedTxs);
+      setDividends(formattedDivs);
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
     } finally {
@@ -97,63 +112,108 @@ const PortfolioDashboard = () => {
   };
 
   // --- CALCULATIONS ---
-  const marketPrices = { 'SCHD': 82.30, 'AAPL': 175.50, 'KO': 62.10 };
-  
-  const costBasis = transactions
-    .filter(tx => tx.type === 'BUY')
-    .reduce((acc, tx) => acc + (tx.total || 0), 0);
+  // Build positions: net shares & cost per ticker
+  const positions = {};
+  transactions.forEach(tx => {
+    if (!positions[tx.ticker]) positions[tx.ticker] = { shares: 0, costEur: 0 };
+    if (tx.type === 'BUY' || tx.type === 'DRIP' || tx.type === 'SCRIP') {
+      positions[tx.ticker].shares += Number(tx.shares) || 0;
+      positions[tx.ticker].costEur += Number(tx.total_eur) || 0;
+    } else if (tx.type === 'SELL') {
+      positions[tx.ticker].shares -= Number(tx.shares) || 0;
+      positions[tx.ticker].costEur -= Number(tx.total_eur) || 0;
+    }
+  });
 
-  const currentMarketValue = transactions
-    .filter(tx => tx.type === 'BUY')
-    .reduce((acc, tx) => acc + (tx.shares * (marketPrices[tx.ticker] || tx.price)), 0);
+  const costBasis = Object.values(positions).reduce((s, p) => s + Math.max(p.costEur, 0), 0);
+  // Without live prices we use cost basis as invested value
+  const investedValue = costBasis;
 
-  const totalDividends = transactions
-    .filter(tx => tx.type === 'DIVIDEND')
-    .reduce((acc, tx) => acc + (tx.total || 0), 0);
-
-  const profit = currentMarketValue - costBasis;
-  const profitabilityPercent = costBasis > 0 ? (profit / costBasis) * 100 : 0;
+  const totalDividends = dividends.reduce((acc, d) => acc + (Number(d.net_amount_eur) || 0), 0);
+  const totalReturn = totalDividends; // capital gains would need live prices
   const yieldOnCost = costBasis > 0 ? (totalDividends / costBasis) * 100 : 0;
 
   const stats = [
-    { label: 'Valor Mercado', value: `€${currentMarketValue.toLocaleString()}`, change: `+${profitabilityPercent.toFixed(2)}%`, isPositive: profitabilityPercent >= 0 },
-    { label: 'Dividendos Totales', value: `€${totalDividends.toLocaleString()}`, change: 'Acumulado', isPositive: true },
-    { label: 'Plusvalía', value: `€${profit.toLocaleString()}`, change: profit >= 0 ? 'Ganancia' : 'Pérdida', isPositive: profit >= 0 },
-    { label: 'Yield on Cost', value: `${yieldOnCost.toFixed(2)}%`, change: 'Eficiencia', isPositive: null },
+    { label: 'Capital Invertido', value: `€${investedValue.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, change: `${Object.keys(positions).filter(t => positions[t].shares > 0).length} posiciones`, isPositive: null, icon: 'wallet' },
+    { label: 'Dividendos Cobrados', value: `€${totalDividends.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, change: `${dividends.length} cobros`, isPositive: true, icon: 'dollar' },
+    { label: 'Retorno Total', value: `€${totalReturn.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, change: costBasis > 0 ? `${(totalReturn / costBasis * 100).toFixed(2)}%` : '0%', isPositive: totalReturn >= 0, icon: 'trend' },
+    { label: 'Yield on Cost', value: `${yieldOnCost.toFixed(2)}%`, change: 'Rentabilidad por dividendo', isPositive: yieldOnCost > 0 ? true : null, icon: 'percent' },
   ];
 
-  const typeSummary = transactions.reduce((acc, tx) => {
-    if (tx.type !== 'BUY') return acc;
-    const existing = acc.find(item => item.name === tx.asset_type);
-    if (existing) {
-      existing.value += tx.total;
-    } else {
-      acc.push({ name: tx.asset_type, value: tx.total });
-    }
-    return acc;
-  }, []);
+  // Distribution by ticker (pie chart)
+  const COLORS = ['#10b981','#f59e0b','#6366f1','#ec4899','#06b6d4','#8b5cf6','#f97316','#14b8a6','#e11d48','#a3e635'];
+  const distData = Object.entries(positions)
+    .filter(([, p]) => p.costEur > 0 && p.shares > 0)
+    .map(([ticker, p], i) => ({
+      name: ticker,
+      value: Math.round(p.costEur * 100) / 100,
+      pct: costBasis > 0 ? Math.round((p.costEur / costBasis) * 1000) / 10 : 0,
+      color: COLORS[i % COLORS.length]
+    }))
+    .sort((a, b) => b.value - a.value);
 
-  const typeData = typeSummary.map(item => ({
-    ...item,
-    value: Math.round((item.value / (costBasis || 1)) * 100),
-    color: item.name === 'STOCK' ? '#10b981' : item.name === 'ETF' ? '#f59e0b' : '#6366f1'
-  }));
+  // Portfolio evolution chart: cumulative invested + cumulative dividends over time
+  const buildEvolutionData = () => {
+    const events = [
+      ...transactions.map(tx => ({
+        date: tx._sortDate,
+        invested: (tx.type === 'BUY' || tx.type === 'DRIP' || tx.type === 'SCRIP') ? Number(tx.total_eur) || 0 : -(Number(tx.total_eur) || 0),
+        div: 0
+      })),
+      ...dividends.map(d => ({
+        date: d._sortDate,
+        invested: 0,
+        div: Number(d.net_amount_eur) || 0
+      }))
+    ].sort((a, b) => new Date(a.date) - new Date(b.date));
+
+    if (events.length === 0) return [];
+
+    let cumInvested = 0, cumDiv = 0;
+    const monthly = {};
+    events.forEach(e => {
+      const d = new Date(e.date);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      cumInvested += e.invested;
+      cumDiv += e.div;
+      monthly[key] = { invertido: Math.round(cumInvested * 100) / 100, dividendos: Math.round(cumDiv * 100) / 100 };
+    });
+
+    return Object.entries(monthly).map(([key, v]) => ({
+      mes: key,
+      ...v,
+      total: Math.round((v.invertido + v.dividendos) * 100) / 100
+    }));
+  };
+  const evolutionData = buildEvolutionData();
 
   const handleAddTransaction = async (data) => {
     try {
+      const shares = parseFloat(data.shares);
+      const priceLocal = parseFloat(data.price);
+      const commission = parseFloat(data.commission) || 0;
+      const exchangeRate = parseFloat(data.exchangeRate) || 1;
+      const totalLocal = shares * priceLocal;
+      const totalEur = (totalLocal / exchangeRate) + commission;
+
       const payload = {
         portfolio_id: selectedPortfolio.id,
         ticker: data.ticker.toUpperCase(),
         type: data.type,
-        shares: parseFloat(data.shares),
-        price_local: parseFloat(data.price),
-        total_eur: parseFloat(data.shares) * parseFloat(data.price),
+        shares: shares,
+        price_local: priceLocal,
+        commission_eur: commission,
+        exchange_rate: exchangeRate,
+        total_local: totalLocal,
+        total_eur: totalEur,
+        remaining_shares: data.type === 'BUY' ? shares : 0,
         date: data.date
       };
       
       await createTransaction(payload);
       fetchData(selectedPortfolio.id);
     } catch (error) {
+      console.error('Error guardando operación:', error);
       alert('Error guardando operación');
     }
   };
@@ -163,13 +223,18 @@ const PortfolioDashboard = () => {
       const payload = {
         portfolio_id: selectedPortfolio.id,
         ticker: data.ticker.toUpperCase(),
-        net_amount_eur: parseFloat(data.amount),
+        gross_amount_eur: parseFloat(data.grossAmount),
+        withholding_origin_eur: parseFloat(data.withholdingOrigin) || 0,
+        withholding_dest_eur: parseFloat(data.withholdingDest) || 0,
+        commission_eur: parseFloat(data.commission) || 0,
+        net_amount_eur: parseFloat(data.netAmount),
         date: data.date
       };
       
       await createDividend(payload);
       fetchData(selectedPortfolio.id);
     } catch (error) {
+      console.error('Error guardando dividendo:', error);
       alert('Error guardando dividendo');
     }
   };
@@ -307,54 +372,95 @@ const PortfolioDashboard = () => {
 
         {/* Charts Section */}
         <div className="grid lg:grid-cols-3 gap-8 mb-10">
+          {/* Distribution Pie */}
           <div className="lg:col-span-1 bg-surface p-8 rounded-3xl border border-slate-800 shadow-sm">
             <h4 className="text-xl font-bold mb-6 flex items-center gap-2 text-text-main">
-              <PieChartIcon className="text-orange-500" /> Distribución
+              <PieChartIcon className="text-orange-500" /> Distribución por Ticker
             </h4>
-            <div className="h-[250px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={typeData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={60}
-                    outerRadius={80}
-                    paddingAngle={8}
-                    dataKey="value"
-                    stroke="none"
-                  >
-                    {typeData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip 
-                    contentStyle={{ backgroundColor: '#0f172a', border: '1px solid #1e293b', borderRadius: '12px' }}
-                    itemStyle={{ color: '#f8fafc' }}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-            <div className="space-y-3 mt-4">
-              {typeData.length > 0 ? typeData.map((item, i) => (
-                <div key={i} className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }}></div>
-                    <span className="text-text-muted font-medium">{item.name || 'Otros'}</span>
-                  </div>
-                  <span className="font-bold text-text-main">{item.value}%</span>
+            {distData.length > 0 ? (
+              <>
+                <div className="h-[220px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={distData}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={55}
+                        outerRadius={85}
+                        paddingAngle={4}
+                        dataKey="value"
+                        stroke="none"
+                      >
+                        {distData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <Tooltip
+                        contentStyle={{ backgroundColor: '#0f172a', border: '1px solid #1e293b', borderRadius: '12px', fontSize: '13px' }}
+                        formatter={(val) => [`€${Number(val).toLocaleString('es-ES', { minimumFractionDigits: 2 })}`, 'Invertido']}
+                      />
+                    </PieChart>
+                  </ResponsiveContainer>
                 </div>
-              )) : <p className="text-center text-text-muted text-sm py-4">Sin datos suficientes</p>}
-            </div>
+                <div className="space-y-2 mt-4 max-h-[180px] overflow-y-auto pr-2">
+                  {distData.map((item, i) => (
+                    <div key={i} className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: item.color }}></div>
+                        <span className="text-text-muted font-medium text-sm">{item.name}</span>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <span className="text-text-muted text-xs">€{item.value.toLocaleString('es-ES')}</span>
+                        <span className="font-bold text-text-main text-sm w-14 text-right">{item.pct}%</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <p className="text-center text-text-muted text-sm py-12">Registra operaciones para ver la distribución.</p>
+            )}
           </div>
 
+          {/* Portfolio Evolution */}
           <div className="lg:col-span-2 bg-surface p-8 rounded-3xl border border-slate-800 shadow-sm">
             <h4 className="text-xl font-bold mb-6 flex items-center gap-2 text-text-main">
-              <DollarSign className="text-emerald-500" /> Historial
+              <TrendingUp className="text-emerald-500" /> Evolución de Cartera
             </h4>
-            <div className="h-[300px] flex items-center justify-center">
-               <p className="text-text-muted italic">Registra operaciones para ver el gráfico de rendimiento.</p>
-            </div>
+            {evolutionData.length > 0 ? (
+              <div className="h-[340px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={evolutionData} margin={{ top: 5, right: 10, left: 10, bottom: 5 }}>
+                    <defs>
+                      <linearGradient id="gradInvertido" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3} />
+                        <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
+                      </linearGradient>
+                      <linearGradient id="gradDividendos" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
+                        <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
+                    <XAxis dataKey="mes" tick={{ fill: '#64748b', fontSize: 11 }} tickLine={false} axisLine={{ stroke: '#1e293b' }} />
+                    <YAxis tick={{ fill: '#64748b', fontSize: 11 }} tickLine={false} axisLine={{ stroke: '#1e293b' }} tickFormatter={(v) => `€${v}`} />
+                    <Tooltip
+                      contentStyle={{ backgroundColor: '#0f172a', border: '1px solid #1e293b', borderRadius: '12px', fontSize: '13px' }}
+                      formatter={(val, name) => [`€${Number(val).toLocaleString('es-ES', { minimumFractionDigits: 2 })}`, name === 'invertido' ? 'Invertido' : name === 'dividendos' ? 'Dividendos' : 'Total']}
+                      labelStyle={{ color: '#94a3b8', fontWeight: 'bold' }}
+                    />
+                    <Legend formatter={(val) => val === 'invertido' ? 'Invertido' : val === 'dividendos' ? 'Dividendos' : 'Total'} wrapperStyle={{ fontSize: '12px', color: '#94a3b8' }} />
+                    <Area type="monotone" dataKey="invertido" stroke="#6366f1" strokeWidth={2} fill="url(#gradInvertido)" />
+                    <Area type="monotone" dataKey="dividendos" stroke="#10b981" strokeWidth={2} fill="url(#gradDividendos)" />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            ) : (
+              <div className="h-[300px] flex items-center justify-center">
+                <p className="text-text-muted italic">Registra operaciones para ver la evolución.</p>
+              </div>
+            )}
           </div>
         </div>
 
@@ -375,30 +481,59 @@ const PortfolioDashboard = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800">
-                {transactions.length > 0 ? transactions.map((tx, i) => (
-                  <tr key={i} className="hover:bg-slate-800/30 transition-colors">
-                    <td className="px-8 py-4 text-text-muted">{tx.date}</td>
-                    <td className="px-8 py-4 font-bold text-text-main">{tx.ticker}</td>
-                    <td className="px-8 py-4">
-                      <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${
-                        tx.type === 'BUY' ? 'bg-emerald-500/10 text-emerald-400' :
-                        tx.type === 'SELL' ? 'bg-rose-500/10 text-rose-400' :
-                        'bg-orange-500/10 text-orange-400'
-                      }`}>
-                        {tx.type === 'BUY' ? 'Compra' : 
-                         tx.type === 'SELL' ? 'Venta' : 'Dividendo'}
-                      </span>
-                    </td>
-                    <td className="px-8 py-4 text-text-muted">{tx.shares || '-'}</td>
-                    <td className={`px-8 py-4 font-bold ${tx.type === 'DIVIDEND' ? 'text-emerald-400' : 'text-text-main'}`}>
-                      €{(tx.total_eur || tx.net_amount_eur || 0).toLocaleString()}
-                    </td>
-                  </tr>
-                )) : (
-                  <tr>
-                    <td colSpan={5} className="px-8 py-12 text-center text-text-muted">No hay operaciones registradas en esta cartera.</td>
-                  </tr>
-                )}
+                {(() => {
+                  const allOps = [
+                    ...transactions.map(tx => ({
+                      key: `tx-${tx.id}`,
+                      date: tx.date,
+                      _sortDate: tx._sortDate,
+                      ticker: tx.ticker,
+                      type: tx.type,
+                      shares: tx.shares,
+                      total: tx.total_eur || 0,
+                      isDiv: false
+                    })),
+                    ...dividends.map(d => ({
+                      key: `div-${d.id}`,
+                      date: d.date,
+                      _sortDate: d._sortDate,
+                      ticker: d.ticker,
+                      type: 'DIVIDEND',
+                      shares: null,
+                      total: d.net_amount_eur || 0,
+                      isDiv: true
+                    }))
+                  ].sort((a, b) => new Date(b._sortDate) - new Date(a._sortDate));
+
+                  if (allOps.length === 0) {
+                    return (
+                      <tr>
+                        <td colSpan={5} className="px-8 py-12 text-center text-text-muted">No hay operaciones registradas en esta cartera.</td>
+                      </tr>
+                    );
+                  }
+
+                  return allOps.map((op) => (
+                    <tr key={op.key} className="hover:bg-slate-800/30 transition-colors">
+                      <td className="px-8 py-4 text-text-muted">{op.date}</td>
+                      <td className="px-8 py-4 font-bold text-text-main">{op.ticker}</td>
+                      <td className="px-8 py-4">
+                        <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${
+                          op.type === 'BUY' ? 'bg-emerald-500/10 text-emerald-400' :
+                          op.type === 'SELL' ? 'bg-rose-500/10 text-rose-400' :
+                          'bg-orange-500/10 text-orange-400'
+                        }`}>
+                          {op.type === 'BUY' ? 'Compra' : 
+                           op.type === 'SELL' ? 'Venta' : 'Dividendo'}
+                        </span>
+                      </td>
+                      <td className="px-8 py-4 text-text-muted">{op.shares || '-'}</td>
+                      <td className={`px-8 py-4 font-bold ${op.isDiv ? 'text-emerald-400' : 'text-text-main'}`}>
+                        €{op.total.toLocaleString()}
+                      </td>
+                    </tr>
+                  ));
+                })()}
               </tbody>
             </table>
           </div>

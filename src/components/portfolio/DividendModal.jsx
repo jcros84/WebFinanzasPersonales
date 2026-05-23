@@ -4,15 +4,40 @@ import { X, DollarSign } from 'lucide-react';
 const DividendModal = ({ isOpen, onClose, onSubmit }) => {
   const [formData, setFormData] = useState({
     ticker: '',
-    amount: '',
+    grossAmount: '',
+    withholdingOrigin: '0',
+    withholdingDest: '0',
+    commission: '0',
     date: new Date().toISOString().split('T')[0]
   });
 
   if (!isOpen) return null;
 
+  const gross = parseFloat(formData.grossAmount) || 0;
+  const whOrigin = parseFloat(formData.withholdingOrigin) || 0;
+  const whDest = parseFloat(formData.withholdingDest) || 0;
+  const comm = parseFloat(formData.commission) || 0;
+  const netAmount = gross - whOrigin - whDest - comm;
+
   const handleSubmit = (e) => {
     e.preventDefault();
-    onSubmit(formData);
+    onSubmit({
+      ticker: formData.ticker,
+      grossAmount: formData.grossAmount,
+      withholdingOrigin: formData.withholdingOrigin,
+      withholdingDest: formData.withholdingDest,
+      commission: formData.commission,
+      netAmount: netAmount,
+      date: formData.date
+    });
+    setFormData({
+      ticker: '',
+      grossAmount: '',
+      withholdingOrigin: '0',
+      withholdingDest: '0',
+      commission: '0',
+      date: new Date().toISOString().split('T')[0]
+    });
     onClose();
   };
 
@@ -44,16 +69,60 @@ const DividendModal = ({ isOpen, onClose, onSubmit }) => {
           </div>
 
           <div>
-            <label className="block text-sm font-bold text-text-muted mb-2">Importe Neto (Cobrado)</label>
+            <label className="block text-sm font-bold text-text-muted mb-2">Importe Bruto (€)</label>
             <input
               type="number"
               step="any"
               required
               placeholder="€ 0.00"
               className="input-field"
-              value={formData.amount}
-              onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
+              value={formData.grossAmount}
+              onChange={(e) => setFormData({ ...formData, grossAmount: e.target.value })}
             />
+          </div>
+
+          <div className="grid grid-cols-3 gap-3">
+            <div>
+              <label className="block text-xs font-bold text-text-muted mb-2">Ret. Origen (€)</label>
+              <input
+                type="number"
+                step="any"
+                placeholder="0"
+                className="input-field text-sm"
+                value={formData.withholdingOrigin}
+                onChange={(e) => setFormData({ ...formData, withholdingOrigin: e.target.value })}
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-text-muted mb-2">Ret. Destino (€)</label>
+              <input
+                type="number"
+                step="any"
+                placeholder="0"
+                className="input-field text-sm"
+                value={formData.withholdingDest}
+                onChange={(e) => setFormData({ ...formData, withholdingDest: e.target.value })}
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-text-muted mb-2">Comisión (€)</label>
+              <input
+                type="number"
+                step="any"
+                placeholder="0"
+                className="input-field text-sm"
+                value={formData.commission}
+                onChange={(e) => setFormData({ ...formData, commission: e.target.value })}
+              />
+            </div>
+          </div>
+
+          {/* Net amount preview */}
+          <div className="bg-slate-900/50 rounded-2xl p-4 border border-slate-800 flex justify-between items-center">
+            <span className="text-sm font-bold text-text-muted">Importe Neto</span>
+            <span className={`text-lg font-bold ${netAmount >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+              €{netAmount.toFixed(2)}
+            </span>
           </div>
 
           <div>

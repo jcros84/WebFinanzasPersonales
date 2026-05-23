@@ -7,15 +7,39 @@ const TransactionModal = ({ isOpen, onClose, onSubmit }) => {
     ticker: '',
     shares: '',
     price: '',
+    commission: '0',
+    exchangeRate: '1',
     date: new Date().toISOString().split('T')[0],
     assetType: 'STOCK'
   });
 
   if (!isOpen) return null;
 
+  const shares = parseFloat(formData.shares) || 0;
+  const price = parseFloat(formData.price) || 0;
+  const commission = parseFloat(formData.commission) || 0;
+  const exchangeRate = parseFloat(formData.exchangeRate) || 1;
+
+  const totalLocal = shares * price;
+  const totalEur = (totalLocal / exchangeRate) + commission;
+
   const handleSubmit = (e) => {
     e.preventDefault();
-    onSubmit(formData);
+    onSubmit({
+      ...formData,
+      totalLocal,
+      totalEur
+    });
+    setFormData({
+      type: 'BUY',
+      ticker: '',
+      shares: '',
+      price: '',
+      commission: '0',
+      exchangeRate: '1',
+      date: new Date().toISOString().split('T')[0],
+      assetType: 'STOCK'
+    });
     onClose();
   };
 
@@ -88,15 +112,39 @@ const TransactionModal = ({ isOpen, onClose, onSubmit }) => {
             </div>
 
             <div>
-              <label className="block text-sm font-bold text-text-muted mb-2">Precio</label>
+              <label className="block text-sm font-bold text-text-muted mb-2">Precio (moneda local)</label>
               <input
                 type="number"
                 step="any"
                 required
-                placeholder="€ 0.00"
+                placeholder="0.00"
                 className="input-field"
                 value={formData.price}
                 onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-bold text-text-muted mb-2">Comisión (€)</label>
+              <input
+                type="number"
+                step="any"
+                placeholder="0.00"
+                className="input-field"
+                value={formData.commission}
+                onChange={(e) => setFormData({ ...formData, commission: e.target.value })}
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-bold text-text-muted mb-2">Tipo de cambio</label>
+              <input
+                type="number"
+                step="any"
+                placeholder="1.00"
+                className="input-field"
+                value={formData.exchangeRate}
+                onChange={(e) => setFormData({ ...formData, exchangeRate: e.target.value })}
               />
             </div>
 
@@ -122,6 +170,18 @@ const TransactionModal = ({ isOpen, onClose, onSubmit }) => {
                 <option value="ETF">ETF</option>
                 <option value="OPTION">Opción</option>
               </select>
+            </div>
+          </div>
+
+          {/* Total preview */}
+          <div className="bg-slate-900/50 rounded-2xl p-4 border border-slate-800 space-y-2">
+            <div className="flex justify-between items-center">
+              <span className="text-sm font-bold text-text-muted">Total Local</span>
+              <span className="text-sm font-bold text-text-main">{totalLocal.toFixed(2)}</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-sm font-bold text-text-muted">Total EUR (+ comisión)</span>
+              <span className="text-lg font-bold text-emerald-400">€{totalEur.toFixed(2)}</span>
             </div>
           </div>
 
