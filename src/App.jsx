@@ -7,6 +7,7 @@ import Services from './pages/Services';
 import Blog from './pages/Blog';
 import Contact from './pages/Contact';
 import PortfolioDashboard from './pages/portfolio/PortfolioDashboard';
+import KpisDashboard from './pages/portfolio/KpisDashboard';
 import Maestros from './pages/maestros/Maestros';
 import Login from './pages/Login';
 import { AuthProvider } from './context/AuthContext';
@@ -53,6 +54,14 @@ const App = () => {
                 element={
                   <ProtectedRoute>
                     <Maestros />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/kpis" 
+                element={
+                  <ProtectedRoute>
+                    <KpisDashboard />
                   </ProtectedRoute>
                 } 
               />

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { TrendingUp, Menu, X, LogOut, User, LayoutDashboard, Settings } from 'lucide-react';
+import { TrendingUp, Menu, X, LogOut, User, LayoutDashboard, Settings, PieChart } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import ThemeToggle from './ThemeToggle';
 
@@ -45,7 +45,7 @@ const Navbar = () => {
             <>
               <div className="relative group">
                 <button
-                  className={`hover:text-primary transition-colors ${isActive('/cartera') || isActive('/maestros') ? 'text-primary font-bold' : 'text-text-muted'} inline-flex items-center gap-2`}
+                  className={`hover:text-primary transition-colors ${isActive('/cartera') || isActive('/kpis') || isActive('/maestros') ? 'text-primary font-bold' : 'text-text-muted'} inline-flex items-center gap-2`}
                 >
                   Cartera
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7"/></svg>
@@ -53,6 +53,9 @@ const Navbar = () => {
                 <div className="absolute left-0 mt-2 w-48 bg-surface border border-slate-800 rounded-xl shadow-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10 overflow-hidden">
                   <Link to="/cartera" className="flex items-center gap-3 px-4 py-3 text-sm hover:bg-slate-800 text-text-main transition-colors">
                     <LayoutDashboard size={16} /> Panel DGI
+                  </Link>
+                  <Link to="/kpis" className="flex items-center gap-3 px-4 py-3 text-sm hover:bg-slate-800 text-text-main transition-colors">
+                    <PieChart size={16} /> KPIs
                   </Link>
                   <Link to="/maestros" className="flex items-center gap-3 px-4 py-3 text-sm hover:bg-slate-800 text-text-main transition-colors">
                     <Settings size={16} /> Maestros
@@ -104,6 +107,7 @@ const Navbar = () => {
           {user ? (
             <>
               <Link to="/cartera" className="block text-lg font-medium text-primary" onClick={() => setIsMenuOpen(false)}>Cartera</Link>
+              <Link to="/kpis" className="block text-lg font-medium text-text-main" onClick={() => setIsMenuOpen(false)}>KPIs</Link>
               <Link to="/maestros" className="block text-lg font-medium text-text-main" onClick={() => setIsMenuOpen(false)}>Maestros</Link>
               <button 
                 onClick={() => { handleSignOut(); setIsMenuOpen(false); }}
