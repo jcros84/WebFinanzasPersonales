@@ -27,7 +27,8 @@ import {
   Area,
   PieChart,
   Pie,
-  Cell
+  Cell,
+  LabelList
 } from 'recharts';
 
 const KpisDashboard = () => {
@@ -287,6 +288,59 @@ const KpisDashboard = () => {
 
   const { sectors: sectorData, countries: countryData } = buildDiversificationData();
 
+  // --- TICKER WEIGHT DATA (Horizontal Bar) ---
+  const buildTickerWeightData = () => {
+    const tickerMap = {};
+    transactions.forEach(tx => {
+      if (!tickerMap[tx.ticker]) tickerMap[tx.ticker] = 0;
+      const amount = Number(tx.total_eur) || 0;
+      if (tx.type === 'BUY' || tx.type === 'DRIP' || tx.type === 'SCRIP') {
+        tickerMap[tx.ticker] += amount;
+      } else if (tx.type === 'SELL') {
+        tickerMap[tx.ticker] -= amount;
+      }
+    });
+
+    const entries = Object.entries(tickerMap)
+      .filter(([, val]) => val > 0)
+      .sort((a, b) => b[1] - a[1]);
+
+    const grandTotal = entries.reduce((sum, [, val]) => sum + val, 0);
+
+    return entries.map(([ticker, value]) => ({
+      ticker,
+      total: Math.round(value * 100) / 100,
+      pct: grandTotal > 0 ? Math.round((value / grandTotal) * 1000) / 10 : 0
+    }));
+  };
+
+  const tickerWeightData = buildTickerWeightData();
+
+  // --- TICKER DIVIDEND DATA (Horizontal Bar) ---
+  const buildTickerDividendData = () => {
+    const tickerMap = {};
+    dividends.forEach(d => {
+      const ticker = d.ticker;
+      const amount = Number(d.gross_amount_eur) || 0;
+      if (!tickerMap[ticker]) tickerMap[ticker] = 0;
+      tickerMap[ticker] += amount;
+    });
+
+    const entries = Object.entries(tickerMap)
+      .filter(([, val]) => val > 0)
+      .sort((a, b) => b[1] - a[1]);
+
+    const grandTotal = entries.reduce((sum, [, val]) => sum + val, 0);
+
+    return entries.map(([ticker, value]) => ({
+      ticker,
+      total: Math.round(value * 100) / 100,
+      pct: grandTotal > 0 ? Math.round((value / grandTotal) * 1000) / 10 : 0
+    }));
+  };
+
+  const tickerDividendData = buildTickerDividendData();
+
   if (loading && portfolios.length === 0) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -455,6 +509,7 @@ const KpisDashboard = () => {
                     <XAxis dataKey="month" tick={{ fill: '#64748b', fontSize: 12 }} tickLine={false} axisLine={{ stroke: '#1e293b' }} />
                     <YAxis tick={{ fill: '#64748b', fontSize: 12 }} tickLine={false} axisLine={{ stroke: '#1e293b' }} tickFormatter={(v) => `€${v}`} />
                     <RechartsTooltip
+                      cursor={{ fill: 'transparent' }}
                       contentStyle={{ backgroundColor: '#0f172a', border: '1px solid #1e293b', borderRadius: '12px', fontSize: '13px' }}
                       labelStyle={{ color: '#94a3b8', fontWeight: 'bold' }}
                       formatter={(val) => [`€${Number(val).toLocaleString('es-ES', { minimumFractionDigits: 2 })}`]}
@@ -673,6 +728,128 @@ const KpisDashboard = () => {
               </div>
             )}
           </div>
+        </div>
+
+        {/* Peso por Ticker – Horizontal Bar Chart */}
+        {/* Ticker Weight & Dividend Charts */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-8">
+          {/* Peso por Ticker – Capital Invertido */}
+          {tickerWeightData.length > 0 && (
+            <div className="bg-surface p-8 rounded-3xl border border-slate-800 shadow-sm">
+              <div className="mb-6">
+                <h4 className="text-xl font-bold text-text-main flex items-center gap-2 mb-1">
+                  <Briefcase className="text-indigo-400" size={20} />
+                  Peso por Ticker (Capital Invertido)
+                </h4>
+                <p className="text-xs text-text-muted">Distribución del capital invertido por cada activo, ordenado de mayor a menor</p>
+              </div>
+
+              <div style={{ height: Math.max(tickerWeightData.length * 38, 200) }} className="w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart
+                    data={tickerWeightData}
+                    layout="vertical"
+                    margin={{ top: 5, right: 40, left: 10, bottom: 5 }}
+                    barSize={20}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" horizontal={false} />
+                    <XAxis
+                      type="number"
+                      tick={{ fill: '#64748b', fontSize: 12 }}
+                      tickLine={false}
+                      axisLine={{ stroke: '#1e293b' }}
+                      tickFormatter={(v) => `€${v.toLocaleString('es-ES')}`}
+                    />
+                    <YAxis
+                      type="category"
+                      dataKey="ticker"
+                      tick={{ fill: '#e2e8f0', fontSize: 13, fontWeight: 600 }}
+                      tickLine={false}
+                      axisLine={{ stroke: '#1e293b' }}
+                      width={80}
+                    />
+                    <RechartsTooltip
+                      cursor={{ fill: 'transparent' }}
+                      contentStyle={{ backgroundColor: '#0f172a', border: '1px solid #1e293b', borderRadius: '12px', fontSize: '13px' }}
+                      labelStyle={{ color: '#e2e8f0', fontWeight: 'bold' }}
+                      itemStyle={{ color: '#94a3b8' }}
+                      formatter={(val, name, props) => [
+                        `€${Number(val).toLocaleString('es-ES', { minimumFractionDigits: 2 })} (${props.payload.pct}%)`,
+                        'Total Invertido'
+                      ]}
+                    />
+                    <Bar dataKey="total" name="Total Invertido" fill="#6366f1" radius={[0, 6, 6, 0]}>
+                      <LabelList
+                        dataKey="pct"
+                        position="right"
+                        formatter={(val) => `${val}%`}
+                        style={{ fill: '#94a3b8', fontSize: 12, fontWeight: 600 }}
+                      />
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          )}
+
+          {/* Peso por Ticker – Dividendos Cobrados */}
+          {tickerDividendData.length > 0 && (
+            <div className="bg-surface p-8 rounded-3xl border border-slate-800 shadow-sm">
+              <div className="mb-6">
+                <h4 className="text-xl font-bold text-text-main flex items-center gap-2 mb-1">
+                  <DollarSign className="text-emerald-400" size={20} />
+                  Dividendos por Ticker (Bruto Cobrado)
+                </h4>
+                <p className="text-xs text-text-muted">Total de dividendos brutos cobrados por cada activo, ordenado de mayor a menor</p>
+              </div>
+
+              <div style={{ height: Math.max(tickerDividendData.length * 38, 200) }} className="w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart
+                    data={tickerDividendData}
+                    layout="vertical"
+                    margin={{ top: 5, right: 40, left: 10, bottom: 5 }}
+                    barSize={20}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" horizontal={false} />
+                    <XAxis
+                      type="number"
+                      tick={{ fill: '#64748b', fontSize: 12 }}
+                      tickLine={false}
+                      axisLine={{ stroke: '#1e293b' }}
+                      tickFormatter={(v) => `€${v.toLocaleString('es-ES')}`}
+                    />
+                    <YAxis
+                      type="category"
+                      dataKey="ticker"
+                      tick={{ fill: '#e2e8f0', fontSize: 13, fontWeight: 600 }}
+                      tickLine={false}
+                      axisLine={{ stroke: '#1e293b' }}
+                      width={80}
+                    />
+                    <RechartsTooltip
+                      cursor={{ fill: 'transparent' }}
+                      contentStyle={{ backgroundColor: '#0f172a', border: '1px solid #1e293b', borderRadius: '12px', fontSize: '13px' }}
+                      labelStyle={{ color: '#e2e8f0', fontWeight: 'bold' }}
+                      itemStyle={{ color: '#94a3b8' }}
+                      formatter={(val, name, props) => [
+                        `€${Number(val).toLocaleString('es-ES', { minimumFractionDigits: 2 })} (${props.payload.pct}%)`,
+                        'Total Dividendos'
+                      ]}
+                    />
+                    <Bar dataKey="total" name="Total Dividendos" fill="#10b981" radius={[0, 6, 6, 0]}>
+                      <LabelList
+                        dataKey="total"
+                        position="right"
+                        formatter={(val) => `€${Number(val).toLocaleString('es-ES', { minimumFractionDigits: 2 })}`}
+                        style={{ fill: '#94a3b8', fontSize: 12, fontWeight: 600 }}
+                      />
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          )}
         </div>
 
       </div>
