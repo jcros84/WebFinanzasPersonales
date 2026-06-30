@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { 
   TrendingUp, 
   TrendingDown, 
@@ -40,6 +40,8 @@ const PortfolioDashboard = () => {
   const [transactions, setTransactions] = useState([]);
   const [dividends, setDividends] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [pageSize, setPageSize] = useState(10);
+  const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
     fetchPortfolios();
@@ -505,34 +507,82 @@ const PortfolioDashboard = () => {
                     }))
                   ].sort((a, b) => new Date(b._sortDate) - new Date(a._sortDate));
 
-                  if (allOps.length === 0) {
-                    return (
-                      <tr>
-                        <td colSpan={5} className="px-8 py-12 text-center text-text-muted">No hay operaciones registradas en esta cartera.</td>
-                      </tr>
-                    );
-                  }
+                  const totalPages = Math.ceil(allOps.length / pageSize);
+                  const paginatedOps = allOps.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
-                  return allOps.map((op) => (
-                    <tr key={op.key} className="hover:bg-slate-800/30 transition-colors">
-                      <td className="px-8 py-4 text-text-muted">{op.date}</td>
-                      <td className="px-8 py-4 font-bold text-text-main">{op.ticker}</td>
-                      <td className="px-8 py-4">
-                        <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${
-                          op.type === 'BUY' ? 'bg-emerald-500/10 text-emerald-400' :
-                          op.type === 'SELL' ? 'bg-rose-500/10 text-rose-400' :
-                          'bg-orange-500/10 text-orange-400'
-                        }`}>
-                          {op.type === 'BUY' ? 'Compra' : 
-                           op.type === 'SELL' ? 'Venta' : 'Dividendo'}
-                        </span>
-                      </td>
-                      <td className="px-8 py-4 text-text-muted">{op.shares || '-'}</td>
-                      <td className={`px-8 py-4 font-bold ${op.isDiv ? 'text-emerald-400' : 'text-text-main'}`}>
-                        €{op.total.toLocaleString()}
-                      </td>
-                    </tr>
-                  ));
+                  return (
+                    <>
+                      {paginatedOps.length === 0 ? (
+                        <tr>
+                          <td colSpan={5} className="px-8 py-12 text-center text-text-muted">
+                            No hay operaciones registradas en esta cartera.
+                          </td>
+                        </tr>
+                      ) : (
+                        paginatedOps.map((op) => (
+                          <tr key={op.key} className="hover:bg-slate-800/30 transition-colors">
+                            <td className="px-8 py-4 text-text-muted">{op.date}</td>
+                            <td className="px-8 py-4 font-bold text-text-main">{op.ticker}</td>
+                            <td className="px-8 py-4">
+                              <span
+                                className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${
+                                  op.type === 'BUY'
+                                    ? 'bg-emerald-500/10 text-emerald-400'
+                                    : op.type === 'SELL'
+                                    ? 'bg-rose-500/10 text-rose-400'
+                                    : 'bg-orange-500/10 text-orange-400'
+                                }`}
+                              >
+                                {op.type === 'BUY'
+                                  ? 'Compra'
+                                  : op.type === 'SELL'
+                                  ? 'Venta'
+                                  : 'Dividendo'}
+                              </span>
+                            </td>
+                            <td className="px-8 py-4 text-text-muted">{op.shares || '-'}</td>
+                            <td className={`px-8 py-4 font-bold ${op.isDiv ? 'text-emerald-400' : 'text-text-main'}`}>
+                              €{op.total.toLocaleString()}
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                      {totalPages > 1 && (
+                        <tr>
+                          <td colSpan={5} className="px-8 py-4 border-t border-slate-800">
+                            <div className="flex justify-between items-center">
+                              <select 
+                                value={pageSize} 
+                                onChange={(e) => { setPageSize(Number(e.target.value)); setCurrentPage(1); }}
+                                className="bg-slate-900 border border-slate-700 text-text-muted text-sm rounded px-2 py-1"
+                              >
+                                <option value={5}>5 por pág.</option>
+                                <option value={10}>10 por pág.</option>
+                                <option value={20}>20 por pág.</option>
+                              </select>
+                              <div className="flex justify-center gap-2">
+                                <button
+                                  disabled={currentPage === 1}
+                                  onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                                  className="px-3 py-1 bg-slate-800 rounded text-text-muted text-sm disabled:opacity-50"
+                                >
+                                  Anterior
+                                </button>
+                                <span className="px-3 py-1 text-sm text-text-muted">Página {currentPage} de {totalPages}</span>
+                                <button
+                                  disabled={currentPage === totalPages}
+                                  onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                                  className="px-3 py-1 bg-slate-800 rounded text-text-muted text-sm disabled:opacity-50"
+                                >
+                                  Siguiente
+                                </button>
+                              </div>
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </>
+                  );
                 })()}
               </tbody>
             </table>
